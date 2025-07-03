@@ -1,4 +1,3 @@
-
 # 2-lazy_paginate.py
 import mysql.connector
 import os
