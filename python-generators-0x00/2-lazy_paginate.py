@@ -1,3 +1,4 @@
+
 # 2-lazy_paginate.py
 import mysql.connector
 import os
@@ -35,8 +36,9 @@ def paginate_users(page_size, offset):
         connection = seed.connect_to_prodev()
         if connection:
             cursor = connection.cursor(dictionary=True)
-            # Ensure consistent ordering for pagination
-            cursor.execute(f"SELECT user_id, name, email, age FROM user_data ORDER BY user_id LIMIT {page_size} OFFSET {offset}")
+            # Fetch all columns using SELECT * and apply LIMIT and OFFSET for pagination
+            # Ordering is added to ensure consistent pagination results.
+            cursor.execute(f"SELECT * FROM user_data ORDER BY user_id LIMIT {page_size} OFFSET {offset}")
             rows = cursor.fetchall()
         else:
             print("Failed to connect to the database. Cannot paginate users.")
