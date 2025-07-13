@@ -1,58 +1,29 @@
 import sqlite3
 import functools
-import os
 
-def setup_dummy_database():
-    """Sets up a simple in-memory SQLite database for demonstration."""
-    # Remove the database file if it exists to ensure a clean start
-    if os.path.exists('users.db'):
-        os.remove('users.db')
-        
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    # Create a users table
-    cursor.execute('''
-        CREATE TABLE users (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL
-        )
-    ''')
-    # Insert some sample data
-    cursor.execute("INSERT INTO users (name, email) VALUES (?, ?)", ('Alice', 'alice@example.com'))
-    cursor.execute("INSERT INTO users (name, email) VALUES (?, ?)", ('Bob', 'bob@example.com'))
-    conn.commit()
-    conn.close()
-
+# Define the decorator to log SQL queries
 def log_queries(func):
     """
-    A decorator that logs the SQL query string of a function before executing it.
-    It assumes the query is passed as the first positional argument or a keyword argument named 'query'.
+    A decorator that logs the SQL query before executing the decorated function.
+    It assumes the SQL query is the first argument passed to the decorated function.
     """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        # Attempt to find the query string in the function's arguments
-        query_str = ""
-        if 'query' in kwargs:
-            query_str = kwargs['query']
-        elif args:
-            # Assuming the query is the first positional argument
-            query_str = args[0]
-
-        # Log the query if it was found
-        if query_str:
-            print(f"[LOG] Executing Query: \"{query_str}\"")
+        # Check if there's at least one argument, which is expected to be the query
+        if args:
+            query = args[0] # Assuming the SQL query is the first positional argument
+            print(f"Executing SQL Query: {query}")
         else:
-            print("[LOG] Decorator could not find the query string to log.")
-        
-        # Execute the original function and return its result
+            print("Executing a database function, but no query argument found.")
+
+        # Call the original function with its arguments
         return func(*args, **kwargs)
     return wrapper
 
 @log_queries
 def fetch_all_users(query):
     """
-    Connects to the database, executes a given query, and fetches all results.
+    Connects to 'users.db', executes the given query, and fetches all results.
     """
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
@@ -61,24 +32,40 @@ def fetch_all_users(query):
     conn.close()
     return results
 
-# Main execution block
-if __name__ == "__main__":
-    print("--- Setting up the database ---")
-    setup_dummy_database()
-    print("Database 'users.db' created with sample data.\n")
+# --- Example Usage ---
 
-    print("--- Fetching users while logging the query ---")
-    # The @log_queries decorator will intercept this call
-    users = fetch_all_users(query="SELECT * FROM users")
+# First, let's create a dummy 'users.db' and a 'users' table for demonstration
+# This part is not part of the decorator, but necessary to run the example
+def setup_database():
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL
+        )
+    ''')
+    # Insert some dummy data if the table is empty
+    cursor.execute("INSERT OR IGNORE INTO users (id, name, email) VALUES (1, 'Alice Smith', 'alice@example.com')")
+    cursor.execute("INSERT OR IGNORE INTO users (id, name, email) VALUES (2, 'Bob Johnson', 'bob@example.com')")
+    conn.commit()
+    conn.close()
+    print("Database 'users.db' and table 'users' ensured to exist with dummy data.")
 
-    print("\n--- Query Results ---")
-    if users:
-        for user in users:
-            print(f"ID: {user[0]}, Name: {user[1]}, Email: {user[2]}")
-    else:
-        print("No users found.")
+# Set up the database before fetching
+setup_database()
 
-    # Clean up the created database file
-    if os.path.exists('users.db'):
-        os.remove('users.db')
-    print("\n--- Cleaned up database file ---")
+# Fetch users while logging the query
+print("\n--- Fetching all users ---")
+users = fetch_all_users(query="SELECT * FROM users")
+print("Fetched Users:", users)
+
+print("\n--- Fetching a specific user ---")
+specific_user = fetch_all_users(query="SELECT * FROM users WHERE name = 'Alice Smith'")
+print("Fetched Specific User:", specific_user)
+
+print("\n--- Fetching with a non-existent query (still logs) ---")
+no_users = fetch_all_users(query="SELECT * FROM users WHERE id = 999")
+print("Fetched No Users:", no_users)
+
