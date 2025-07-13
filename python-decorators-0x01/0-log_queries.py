@@ -1,20 +1,23 @@
 import sqlite3
 import functools
+from datetime import datetime # Added import for datetime
 
 # Define the decorator to log SQL queries
 def log_queries(func):
     """
     A decorator that logs the SQL query before executing the decorated function.
     It assumes the SQL query is the first argument passed to the decorated function.
+    The log message now includes a timestamp.
     """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S") # Get current timestamp
         # Check if there's at least one argument, which is expected to be the query
         if args:
             query = args[0] # Assuming the SQL query is the first positional argument
-            print(f"Executing SQL Query: {query}")
+            print(f"[{timestamp}] Executing SQL Query: {query}") # Added timestamp to log
         else:
-            print("Executing a database function, but no query argument found.")
+            print(f"[{timestamp}] Executing a database function, but no query argument found.") # Added timestamp to log
 
         # Call the original function with its arguments
         return func(*args, **kwargs)
@@ -68,4 +71,3 @@ print("Fetched Specific User:", specific_user)
 print("\n--- Fetching with a non-existent query (still logs) ---")
 no_users = fetch_all_users(query="SELECT * FROM users WHERE id = 999")
 print("Fetched No Users:", no_users)
-
