@@ -16,6 +16,17 @@ class UserSerializer(serializers.ModelSerializer):
         # 'user_id' is typically read-only as it's a primary key generated automatically.
         read_only_fields = ['user_id']
 
+    # Example of using serializers.CharField for custom validation or non-model fields
+    # If you had a field not directly mapped to a model, or needed specific validation
+    # custom_field = serializers.CharField(max_length=100, required=False)
+
+    # Example of using serializers.ValidationError in a custom validation method
+    # def validate_email(self, value):
+    #     if User.objects.filter(email=value).exists():
+    #         raise serializers.ValidationError("This email is already in use.")
+    #     return value
+
+
 # Message Serializer
 # This serializer handles the Message model.
 # It exposes message_id, conversation, sender, message_body, and sent_at.
@@ -55,6 +66,12 @@ class ConversationSerializer(serializers.ModelSerializer):
     # source='messages' refers to the related_name defined in the Message model's ForeignKey to Conversation.
     messages = MessageSerializer(many=True, read_only=True, source='messages')
 
+    # Example of using serializers.SerializerMethodField()
+    # This field will return a custom value computed by a method on the serializer.
+    # Here, it returns a comma-separated string of participant usernames.
+    participant_usernames = serializers.SerializerMethodField()
+    # Another example: message_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Conversation
         # Fields to be included in the serialized output.
@@ -63,7 +80,23 @@ class ConversationSerializer(serializers.ModelSerializer):
         # 'name' is the conversation name.
         # 'created_at' and 'updated_at' are timestamps.
         # 'messages' will be a list of serialized Message objects.
-        fields = ['conversation_id', 'participants', 'name', 'created_at', 'updated_at', 'messages']
+        # 'participant_usernames' is our new custom field.
+        fields = ['conversation_id', 'participants', 'name', 'created_at', 'updated_at', 'messages', 'participant_usernames']
         # 'read_only_fields' ensures these fields cannot be updated via the serializer.
         read_only_fields = ['conversation_id', 'created_at', 'updated_at']
 
+    # Method for participant_usernames SerializerMethodField
+    def get_participant_usernames(self, obj):
+        # 'obj' refers to the current Conversation instance being serialized
+        return ", ".join([p.username for p in obj.participants.all()])
+
+    # Example method for message_count SerializerMethodField
+    # def get_message_count(self, obj):
+    #     return obj.messages.count()
+
+    # Example of using serializers.ValidationError in a custom validation method for the whole serializer
+    # def validate(self, data):
+    #     # Example: Ensure a conversation has at least two participants if 'name' is not provided
+    #     if not data.get('name') and len(data.get('participants', [])) < 2:
+    #         raise serializers.ValidationError("A conversation without a name must have at least two participants.")
+    #     return data
