@@ -3,9 +3,11 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from django.db.models import Q # For complex lookups
+from django_filters.rest_framework import DjangoFilterBackend # Import DjangoFilterBackend
 
 from .models import User, Conversation, Message
 from .serializers import UserSerializer, ConversationSerializer, MessageSerializer
+from .filters import ConversationFilter, MessageFilter # Import your new filter classes
 
 # Conversation ViewSet
 # Provides CRUD operations for Conversation objects.
@@ -14,10 +16,15 @@ class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
     # Ensure only authenticated users can access these endpoints.
     permission_classes = [permissions.IsAuthenticated]
+    # Add filter backends for filtering capabilities.
+    filter_backends = [DjangoFilterBackend]
+    # Specify the filterset class to use for filtering conversations.
+    filterset_class = ConversationFilter
 
     def get_queryset(self):
         """
         Returns a queryset of conversations that the requesting user is a participant of.
+        This initial filter ensures security and ownership before any additional filters are applied.
         """
         # Filter conversations to only show those where the current user is a participant.
         # This ensures users only see conversations they are part of.
@@ -110,10 +117,15 @@ class MessageViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = MessageSerializer
     # Ensure only authenticated users can access these endpoints.
     permission_classes = [permissions.IsAuthenticated]
+    # Add filter backends for filtering capabilities.
+    filter_backends = [DjangoFilterBackend]
+    # Specify the filterset class to use for filtering messages.
+    filterset_class = MessageFilter
 
     def get_queryset(self):
         """
         Returns a queryset of messages that belong to conversations the requesting user is a part of.
+        This initial filter ensures security and ownership before any additional filters are applied.
         """
         # Filter messages to only show those where the message's conversation
         # has the current user as a participant.
