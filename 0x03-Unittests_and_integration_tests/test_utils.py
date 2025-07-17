@@ -1,63 +1,89 @@
 #!/usr/bin/env python3
 """
-Unit tests for the utils.py module, specifically for the get_json function.
+Unit tests for the `utils` module.
 """
 import unittest
 from unittest.mock import patch, Mock
+from parameterized import parameterized
 import sys
 import os
+from typing import Mapping, Sequence, Any, Dict
 
-# Add the parent directory to the sys.path to allow importing utils
-# This is important if test_utils.py is in a subdirectory relative to utils.py
-# Adjust this path if utils.py is in a different location relative to test_utils.py
+# Adjust sys.path to ensure utils can be imported if test_utils.py is in a subdirectory
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Assuming utils.py is in the same directory or accessible via PYTHONPATH
-import utils
+# Import functions from utils.py
+from utils import access_nested_map, get_json
+
+
+class TestAccessNestedMap(unittest.TestCase):
+    """
+    Test suite for the `access_nested_map` function.
+    """
+    @parameterized.expand([
+        ({"a": 1}, ("a",), 1),
+        ({"a": {"b": 2}}, ("a",), {"b": 2}),
+        ({"a": {"b": 2}}, ("a", "b"), 2),
+    ])
+    def test_access_nested_map(
+        self,
+        nested_map: Mapping,
+        path: Sequence,
+        expected: Any
+    ) -> None:
+        """
+        Tests that `access_nested_map` returns the expected result
+        for various inputs.
+        """
+        self.assertEqual(access_nested_map(nested_map, path), expected)
+
+    @parameterized.expand([
+        ({}, ("a",)),
+        ({"a": 1}, ("a", "b")),
+    ])
+    def test_access_nested_map_exception(
+        self,
+        nested_map: Mapping,
+        path: Sequence
+    ) -> None:
+        """
+        Tests that a KeyError is raised for invalid paths.
+        """
+        with self.assertRaises(KeyError) as cm:
+            access_nested_map(nested_map, path)
+        
+        # Verify that the KeyError message matches the last key in the path
+        self.assertEqual(cm.exception.args[0], path[-1])
+
 
 class TestGetJson(unittest.TestCase):
     """
-    Tests for the utils.get_json function.
+    Test suite for the `get_json` function with mocked HTTP calls.
     """
-
-    @patch('requests.get')
-    def test_get_json(self, mock_get: Mock):
+    @parameterized.expand([
+        ("http://example.com", {"payload": True}),
+        ("http://holberton.io", {"payload": False}),
+    ])
+    @patch('utils.requests.get') # Patch requests.get within the utils module
+    def test_get_json(self, test_url: str, test_payload: Dict, mock_get: Mock) -> None:
         """
-        Tests that utils.get_json returns the expected result by mocking
-        requests.get.
-
-        It verifies:
-        - requests.get is called exactly once with the correct URL.
-        - The output of get_json matches the mocked payload.
+        Tests that get_json returns the expected result by mocking HTTP calls.
+        It ensures that the requests.get method is called exactly once with the
+        correct URL and that the function's output matches the specified payload.
         """
-        # Define the test cases as a list of tuples: (test_url, test_payload)
-        test_cases = [
-            ("http://example.com", {"payload": True}),
-            ("http://holberton.io", {"payload": False}),
-        ]
+        # Configure the mock to return a response object with a specific json payload
+        mock_response = Mock()
+        mock_response.json.return_value = test_payload
+        mock_get.return_value = mock_response
 
-        for test_url, test_payload in test_cases:
-            with self.subTest(url=test_url, payload=test_payload):
-                # Configure the mock object for each subtest
-                # Create a mock response object
-                mock_response = Mock()
-                # Set the return value of the .json() method on the mock response
-                mock_response.json.return_value = test_payload
-                # Configure the requests.get mock to return our mock response
-                mock_get.return_value = mock_response
+        # Call the function under test
+        result = get_json(test_url)
 
-                # Call the function under test
-                result = utils.get_json(test_url)
+        # Assert that the mocked get method was called exactly once with the correct URL
+        mock_get.assert_called_once_with(test_url)
 
-                # Assert that requests.get was called exactly once with the correct URL
-                mock_get.assert_called_once_with(test_url)
-
-                # Assert that the output of get_json is equal to test_payload
-                self.assertEqual(result, test_payload)
-
-                # Reset the mock for the next iteration of the loop
-                # This is crucial when using a loop with assert_called_once
-                mock_get.reset_mock()
+        # Assert that the output of get_json is equal to the test_payload
+        self.assertEqual(result, test_payload)
 
 if __name__ == '__main__':
     unittest.main()
