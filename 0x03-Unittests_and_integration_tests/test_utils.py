@@ -1,50 +1,46 @@
 #!/usr/bin/env python3
 """
-Unit tests for the `utils.access_nested_map` function.
+A module with utility functions.
 """
-import unittest
-from parameterized import parameterized
-from utils import access_nested_map
-from typing import Mapping, Sequence, Any
+import requests
+from typing import Mapping, Sequence, Any, TypeVar
+
+T = TypeVar('T')
 
 
-class TestAccessNestedMap(unittest.TestCase):
+def access_nested_map(nested_map: Mapping, path: Sequence) -> Any:
     """
-    Test suite for the `access_nested_map` function.
-    """
-    @parameterized.expand([
-        ({"a": 1}, ("a",), 1),
-        ({"a": {"b": 2}}, ("a",), {"b": 2}),
-        ({"a": {"b": 2}}, ("a", "b"), 2),
-    ])
-    def test_access_nested_map(
-        self,
-        nested_map: Mapping,
-        path: Sequence,
-        expected: Any
-    ) -> None:
-        """
-        Tests that `access_nested_map` returns the expected result
-        for various inputs.
-        """
-        self.assertEqual(access_nested_map(nested_map, path), expected)
+    Access a value in a nested map using a sequence of keys.
 
-    @parameterized.expand([
-        ({}, ("a",)),
-        ({"a": 1}, ("a", "b")),
-    ])
-    def test_access_nested_map_exception(
-        self,
-        nested_map: Mapping,
-        path: Sequence
-    ) -> None:
-        """
-        Tests that a KeyError is raised for invalid paths.
-        """
-        with self.assertRaises(KeyError) as cm:
-            access_nested_map(nested_map, path)
-        
-        # For the given inputs, the key that causes the error is the last
-        # one in the path. We assert that the exception's argument is this key.
-        self.assertEqual(cm.exception.args[0], path[-1])
+    Args:
+        nested_map (Mapping): The nested dictionary to access.
+        path (Sequence): A sequence of keys representing the path to the value.
+
+    Returns:
+        Any: The value at the specified path within the nested map.
+
+    Example:
+        >>> nested_map = {"a": {"b": {"c": 1}}}
+        >>> access_nested_map(nested_map, ["a", "b", "c"])
+        1
+    """
+    for key in path:
+        if not isinstance(nested_map, Mapping):
+            raise KeyError(key)
+        nested_map = nested_map[key]
+    return nested_map
+
+
+def get_json(url: str) -> Mapping:
+    """
+    Performs a GET request to a URL and returns the JSON response.
+
+    Args:
+        url (str): The URL to send the request to.
+
+    Returns:
+        Mapping: The JSON payload of the response as a dictionary.
+    """
+    response = requests.get(url)
+    return response.json()
 
