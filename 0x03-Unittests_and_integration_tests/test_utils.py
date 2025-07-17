@@ -13,7 +13,7 @@ from typing import Mapping, Sequence, Any, Dict
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import functions from utils.py
-from utils import access_nested_map, get_json
+from utils import access_nested_map, get_json, memoize
 
 
 class TestAccessNestedMap(unittest.TestCase):
@@ -84,6 +84,50 @@ class TestGetJson(unittest.TestCase):
 
         # Assert that the output of get_json is equal to the test_payload
         self.assertEqual(result, test_payload)
+
+
+class TestMemoize(unittest.TestCase):
+    """
+    Test suite for the `memoize` decorator.
+    """
+    def test_memoize(self) -> None:
+        """
+        Tests that the memoize decorator correctly caches the result
+        of a method call and prevents subsequent calls to the original method.
+        """
+        class TestClass:
+            """
+            A simple class to demonstrate memoization.
+            """
+            def a_method(self):
+                """
+                A method that returns a fixed value.
+                This method will be mocked to track calls.
+                """
+                return 42
+
+            @memoize
+            def a_property(self):
+                """
+                A property that uses the memoize decorator.
+                It calls a_method internally.
+                """
+                return self.a_method()
+
+        # Patch 'a_method' within the TestClass instance
+        with patch.object(TestClass, 'a_method', return_value=42) as mock_a_method:
+            test_instance = TestClass()
+
+            # Call a_property twice
+            result1 = test_instance.a_property()
+            result2 = test_instance.a_property()
+
+            # Assert that a_method was called exactly once
+            mock_a_method.assert_called_once()
+
+            # Assert that the correct result is returned
+            self.assertEqual(result1, 42)
+            self.assertEqual(result2, 42)
 
 if __name__ == '__main__':
     unittest.main()
