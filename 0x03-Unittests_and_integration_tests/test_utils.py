@@ -4,13 +4,14 @@ Unit tests for the `utils` module.
 """
 import unittest
 from unittest.mock import patch, Mock
-from parameterized import parameterized
 import sys
 import os
 from typing import Mapping, Sequence, Any, Dict
 
-# Adjust sys.path to ensure utils can be imported if test_utils.py is in a subdirectory
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Adjust sys.path to ensure utils can be imported if test_utils.py is in a
+# subdirectory. This must be at the top of the file after docstrings.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                '..')))
 
 # Import functions from utils.py
 from utils import access_nested_map, get_json, memoize
@@ -64,14 +65,17 @@ class TestGetJson(unittest.TestCase):
         ("http://example.com", {"payload": True}),
         ("http://holberton.io", {"payload": False}),
     ])
-    @patch('utils.requests.get') # Patch requests.get within the utils module
-    def test_get_json(self, test_url: str, test_payload: Dict, mock_get: Mock) -> None:
+    @patch('utils.requests.get')  # Patch requests.get within the utils module
+    def test_get_json(self, test_url: str, test_payload: Dict,
+                       mock_get: Mock) -> None:
         """
         Tests that get_json returns the expected result by mocking HTTP calls.
         It ensures that the requests.get method is called exactly once with the
-        correct URL and that the function's output matches the specified payload.
+        correct URL and that the function's output matches the specified
+        payload.
         """
-        # Configure the mock to return a response object with a specific json payload
+        # Configure the mock to return a response object with a specific
+        # json payload
         mock_response = Mock()
         mock_response.json.return_value = test_payload
         mock_get.return_value = mock_response
@@ -79,7 +83,8 @@ class TestGetJson(unittest.TestCase):
         # Call the function under test
         result = get_json(test_url)
 
-        # Assert that the mocked get method was called exactly once with the correct URL
+        # Assert that the mocked get method was called exactly once with the
+        # correct URL
         mock_get.assert_called_once_with(test_url)
 
         # Assert that the output of get_json is equal to the test_payload
@@ -115,7 +120,8 @@ class TestMemoize(unittest.TestCase):
                 return self.a_method()
 
         # Patch 'a_method' within the TestClass instance
-        with patch.object(TestClass, 'a_method', return_value=42) as mock_a_method:
+        with patch.object(TestClass, 'a_method',
+                          return_value=42) as mock_a_method:
             test_instance = TestClass()
 
             # Call a_property twice
@@ -129,6 +135,6 @@ class TestMemoize(unittest.TestCase):
             self.assertEqual(result1, 42)
             self.assertEqual(result2, 42)
 
+
 if __name__ == '__main__':
     unittest.main()
-
