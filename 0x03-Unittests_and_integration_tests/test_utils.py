@@ -1,31 +1,31 @@
 #!/usr/bin/env python3
 """
-A module with a utility function for accessing nested maps.
+Unit tests for the `utils.access_nested_map` function.
 """
-from typing import Mapping, Sequence, Any, TypeVar
+import unittest
+from parameterized import parameterized
+from utils import access_nested_map
+from typing import Mapping, Sequence, Any
 
-T = TypeVar('T')
 
-
-def access_nested_map(nested_map: Mapping, path: Sequence) -> Any:
+class TestAccessNestedMap(unittest.TestCase):
     """
-    Access a value in a nested map using a sequence of keys.
-
-    Args:
-        nested_map (Mapping): The nested dictionary to access.
-        path (Sequence): A sequence of keys representing the path to the value.
-
-    Returns:
-        Any: The value at the specified path within the nested map.
-
-    Example:
-        >>> nested_map = {"a": {"b": {"c": 1}}}
-        >>> access_nested_map(nested_map, ["a", "b", "c"])
-        1
+    Test suite for the `access_nested_map` function.
     """
-    for key in path:
-        if not isinstance(nested_map, Mapping):
-            raise KeyError(key)
-        nested_map = nested_map[key]
-    return nested_map
+    @parameterized.expand([
+        ({"a": 1}, ("a",), 1),
+        ({"a": {"b": 2}}, ("a",), {"b": 2}),
+        ({"a": {"b": 2}}, ("a", "b"), 2),
+    ])
+    def test_access_nested_map(
+        self,
+        nested_map: Mapping,
+        path: Sequence,
+        expected: Any
+    ) -> None:
+        """
+        Tests that `access_nested_map` returns the expected result
+        for various inputs.
+        """
+        self.assertEqual(access_nested_map(nested_map, path), expected)
 
