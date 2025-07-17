@@ -58,6 +58,9 @@ class Conversation(models.Model):
 # Message Model
 # Contains the sender, the conversation it belongs to, and the message content.
 class Message(models.Model):
+    # Define message_id as a UUID primary key
+    message_id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
+
     # Foreign Key to the Conversation model.
     # A message belongs to one conversation. If the conversation is deleted, messages are also deleted (CASCADE).
     # related_name='messages' allows accessing messages from a Conversation instance (e.g., conversation.messages.all())
@@ -66,16 +69,16 @@ class Message(models.Model):
     # A message is sent by one user. If the sender is deleted, messages are also deleted (CASCADE).
     # related_name='sent_messages' allows accessing sent messages from a User instance (e.g., user.sent_messages.all())
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    # The actual content of the message.
-    content = models.TextField()
-    # Automatically sets the timestamp when the message is created.
-    timestamp = models.DateTimeField(auto_now_add=True)
+    # The actual content of the message, renamed to message_body.
+    message_body = models.TextField()
+    # Automatically sets the timestamp when the message is created, renamed to sent_at.
+    sent_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['timestamp'] # Order messages chronologically
+        ordering = ['sent_at'] # Order messages chronologically
         verbose_name = "Message"
         verbose_name_plural = "Messages"
 
     def __str__(self):
         # Display a meaningful string representation for the message
-        return f"Message from {self.sender.username} in {self.conversation.name or self.conversation.id} at {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
+        return f"Message from {self.sender.username} in {self.conversation.name or self.conversation.id} at {self.sent_at.strftime('%Y-%m-%d %H:%M')}"
