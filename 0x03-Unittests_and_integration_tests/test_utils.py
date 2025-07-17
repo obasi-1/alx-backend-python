@@ -9,10 +9,10 @@ import os
 
 # Add the parent directory to the sys.path to allow importing utils
 # This is important if test_utils.py is in a subdirectory relative to utils.py
+# Adjust this path if utils.py is in a different location relative to test_utils.py
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Assuming utils.py is in the same directory or accessible via PYTHONPATH
-# If utils.py is in a parent directory, you might need to adjust sys.path
 import utils
 
 class TestGetJson(unittest.TestCase):
