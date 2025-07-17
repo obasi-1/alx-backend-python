@@ -28,6 +28,9 @@ class User(AbstractUser):
 # Conversation Model
 # Tracks which users are involved in a conversation.
 class Conversation(models.Model):
+    # Define conversation_id as a UUID primary key
+    conversation_id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
+
     # Many-to-Many relationship with the custom User model.
     # A conversation can have multiple participants, and a user can be in multiple conversations.
     # We use 'User' (the string name of the model) because it's defined in the same app.
