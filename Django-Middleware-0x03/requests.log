@@ -1,0 +1,10 @@
+This file will be automatically generated and populated by the RequestLoggingMiddleware. It will contain log entries in the format:
+
+YYYY-MM-DD HH:MM:SS.microseconds - User: <username_or_AnonymousUser> - Path: <request_path>
+
+Example content after running the server and making some requests:
+
+2025-07-27 19:11:00.123456 - User: AnonymousUser - Path: /admin/login/
+2025-07-27 19:11:05.678901 - User: admin - Path: /admin/
+2025-07-27 19:11:10.000111 - User: admin - Path: /api/conversations/
+2025-07-27 19:11:15.222333 - User: AnonymousUser - Path: /api/conversations/
