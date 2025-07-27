@@ -52,9 +52,14 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Add your custom middlewares here.
-    # Place RestrictAccessByTimeMiddleware before RequestLoggingMiddleware if you want to deny access
-    # before logging the request.
-    'chats.middleware.RestrictAccessByTimeMiddleware', # New middleware for time restriction
+    # Order matters:
+    # - RestrictAccessByTimeMiddleware: Denies access based on time, so it should come early.
+    # - OffensiveLanguageMiddleware: Rate limits POST requests, so it should come after basic security
+    #   and session management, but before the view is processed.
+    # - RequestLoggingMiddleware: Logs requests, typically placed after other middlewares
+    #   have processed the request, but can be earlier depending on what you want to log.
+    'chats.middleware.RestrictAccessByTimeMiddleware',
+    'chats.middleware.OffensiveLanguageMiddleware', # New middleware for rate limiting
     'chats.middleware.RequestLoggingMiddleware',
 ]
 
@@ -69,8 +74,8 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.auth',
+                'django.template.context_processors.messages',
             ],
         },
     },
