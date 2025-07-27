@@ -1,7 +1,7 @@
 # messaging_app/chats/views.py
 
 from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated # IsAuthenticated is imported here
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 
@@ -61,7 +61,8 @@ class MessageViewSet(viewsets.ModelViewSet):
             # Get all conversations the current user is a participant of
             user_conversations = Conversation.objects.filter(participants=self.request.user)
             # Filter messages that belong to these conversations
-            return self.queryset.filter(conversation__in=user_conversations)
+            # self.queryset is Message.objects.all(), so this is effectively Message.objects.filter(...)
+            return self.queryset.filter(conversation__in=user_conversations) 
         return self.queryset.none() # Return an empty queryset if user is not authenticated
 
     def perform_create(self, serializer):
@@ -73,6 +74,7 @@ class MessageViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Conversation ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            # This uses Conversation.objects.filter internally via get_object_or_404
             conversation = get_object_or_404(Conversation, pk=conversation_id)
         except Exception:
             return Response({"detail": "Conversation not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -81,7 +83,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         if self.request.user not in conversation.participants.all():
             return Response(
                 {"detail": "You are not a participant of this conversation."},
-                status=status.HTTP_403_FORBIDDEN # HTTP_403_FORBIDDEN is used here
+                status=status.HTTP_403_FORBIDDEN
             )
         
         # Save the message, linking it to the conversation and the sender
