@@ -9,8 +9,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework', # Make sure rest_framework is in your installed apps
-    'chats', # Your chats app
+    'rest_framework',
+    'django_filters', # Added django_filters to your installed apps
+    'chats',
     # ... other apps
 ]
 
@@ -23,9 +24,16 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication', # Added BasicAuthentication
-        'rest_framework.authentication.TokenAuthentication', # If you are using Token authentication
-        # Add other authentication classes if needed (e.g., JWT)
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    # Default pagination settings (can be overridden per ViewSet)
+    'DEFAULT_PAGINATION_CLASS': 'chats.pagination.MessagePagination', # Set your custom pagination class as default
+    'PAGE_SIZE': 20, # This sets the default page size if DEFAULT_PAGINATION_CLASS is used
+    
+    # Default filter backends
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
     ],
 }
 
