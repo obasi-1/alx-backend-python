@@ -1,6 +1,7 @@
 # Django-Middleware-0x03/alx-backend-python/settings.py
 
-# ... (other settings like BASE_DIR, SECRET_KEY, DEBUG, ALLOWED_HOSTS, INSTALLED_APPS)
+# This is a sample settings.py file.
+# You might have other settings here like BASE_DIR, SECRET_KEY, DEBUG, ALLOWED_HOSTS, etc.
 
 # Application definition
 
@@ -23,11 +24,13 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware', # Ensure this is before custom middlewares that use request.user
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # --- START HIGHLIGHT ---
     # Add your custom middlewares here in the desired order
     'chats.middleware.RequestLoggingMiddleware',
     'chats.middleware.RestrictAccessByTimeMiddleware',
     'chats.middleware.OffensiveLanguageMiddleware',
-    'chats.middleware.RolePermissionMiddleware',
+    'chats.middleware.RolePermissionMiddleware', # <--- THIS IS THE LINE I ADDED/HIGHLIGHTED
+    # --- END HIGHLIGHT ---
 ]
 
 ROOT_URLCONF = 'alx_backend_python.urls' # Adjust if your project name is different
