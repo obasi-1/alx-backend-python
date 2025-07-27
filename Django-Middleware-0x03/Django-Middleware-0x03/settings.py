@@ -49,17 +49,16 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Add your custom middlewares here.
+    # RolePermissionMiddleware must come after AuthenticationMiddleware to access request.user.
+    'chats.middleware.RolePermissionMiddleware', # New middleware for role-based access
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # Add your custom middlewares here.
-    # Order matters:
-    # - RestrictAccessByTimeMiddleware: Denies access based on time, so it should come early.
-    # - OffensiveLanguageMiddleware: Rate limits POST requests, so it should come after basic security
-    #   and session management, but before the view is processed.
-    # - RequestLoggingMiddleware: Logs requests, typically placed after other middlewares
-    #   have processed the request, but can be earlier depending on what you want to log.
+    # Order of other custom middlewares can vary based on your specific requirements.
+    # For instance, if you want time/rate limits to apply even to unauthorized users,
+    # keep them after RolePermissionMiddleware.
     'chats.middleware.RestrictAccessByTimeMiddleware',
-    'chats.middleware.OffensiveLanguageMiddleware', # New middleware for rate limiting
+    'chats.middleware.OffensiveLanguageMiddleware',
     'chats.middleware.RequestLoggingMiddleware',
 ]
 
