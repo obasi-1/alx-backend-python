@@ -24,7 +24,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Add your custom middleware here
-    'chats.middleware.RolePermissionMiddleware',
+    'chats.middleware.RolePermissionMiddleware', # This line is now explicitly included
 ]
 
 ROOT_URLCONF = 'alx_backend_python.urls' # Adjust if your project name is different
