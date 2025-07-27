@@ -1,8 +1,8 @@
 """
-URL configuration for messaging_app project.
+messaging_app URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.0/topics/http/urls/
+    https://docs.djangoproject.com/en/4.0/topics/http/urls/
 Examples:
 Function views
     1. Add an import:  from my_app import views
@@ -15,13 +15,18 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include # Ensure path and include are imported
+from django.urls import path, include
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Include your chats app's URLs under the 'api/' prefix.
+    # Include your app's URLs
     path('api/', include('chats.urls')),
-    # Include Django REST Framework's login and logout views for the browsable API.
-    # This provides the 'api-auth' namespace for authentication URLs.
-    path('api-auth/', include('rest_framework.urls')),
+    
+    # JWT Token Endpoints
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
