@@ -1,37 +1,70 @@
+# Django-Middleware-0x03/chats/middleware.py
+
 from django.http import HttpResponseForbidden
 
 class RolePermissionMiddleware:
     """
-    Middleware to check the user's role (admin/staff) before allowing access to specific actions.
-    This implementation restricts access to the Django admin site (/admin/) for non-staff users.
-    For more granular control over specific API actions, you might consider Django REST Framework's
-    permission classes directly on your views in addition to or instead of this middleware.
+    Middleware to check user roles (admin or moderator) for specific actions.
+    If the user does not have the required role, it returns a 403 Forbidden response.
     """
     def __init__(self, get_response):
         """
-        One-time configuration and initialization for the middleware.
+        Initializes the middleware.
+        get_response: The next middleware or the view function.
         """
         self.get_response = get_response
 
     def __call__(self, request):
         """
-        Code to be executed for each request to enforce role-based access.
+        Processes the incoming request.
+        Checks if the user's role is 'admin' or 'moderator'.
+        If not, it returns an HttpResponseForbidden.
         """
-        # Allow access to static files and the admin login page for all users.
-        # This prevents blocking CSS/JS for the admin site and allows users to log in.
-        if request.path.startswith(('/static/', '/admin/login/')):
-            return self.get_response(request)
+        # IMPORTANT: This is a placeholder for how you might determine a user's role.
+        # In a real application, you would typically get the role from:
+        # - request.user.is_staff or request.user.is_superuser (for Django's built-in User model)
+        # - A custom 'role' field on your User model or a related profile model
+        # - A session variable or JWT token if using custom authentication.
 
-        # Check if the request is for an admin path (any path starting with /admin/ except login)
-        if request.path.startswith('/admin/'):
-            # If the user is not authenticated OR is authenticated but not a staff member,
-            # deny access with a 403 Forbidden response.
-            # `is_staff` is typically used for users who can access the admin site.
-            if not request.user.is_authenticated or not request.user.is_staff:
-                return HttpResponseForbidden("You do not have the necessary permissions to access this page. Only administrators can access the admin site.")
+        # For demonstration purposes, let's assume the role is stored in a session
+        # or can be derived from the user object.
+        # Replace this logic with how your application actually stores user roles.
 
-        # If the request is not for a restricted path, or if the user has the required permission,
-        # proceed to the next middleware or view.
+        # Example: Assuming you have a custom 'role' attribute on the user object
+        # or you've set it in the session during login.
+        user_role = getattr(request.user, 'role', 'guest') # Default to 'guest' if no role found
+
+        # Example: If you're using Django's built-in User model and want to check staff/superuser status
+        # if request.user.is_authenticated:
+        #     if request.user.is_superuser or request.user.is_staff:
+        #         user_role = 'admin' # Or 'moderator' based on your specific logic
+        #     else:
+        #         user_role = 'user'
+        # else:
+        #     user_role = 'anonymous'
+
+
+        # Define the roles that are allowed to proceed
+        allowed_roles = ['admin', 'moderator']
+
+        # Check if the user is authenticated and has an allowed role
+        # You might want to add more specific URL path checks here
+        # For example, only apply this middleware to '/admin/' paths or specific API endpoints.
+        # if not request.user.is_authenticated or user_role not in allowed_roles:
+        #     # This simple check applies to ALL requests. You might want to refine this.
+        #     # For instance, only apply to specific URLs or views.
+        #     if request.path.startswith('/chats/'): # Example: Only protect /chats/ URLs
+        #         if user_role not in allowed_roles:
+        #             return HttpResponseForbidden("You do not have permission to access this resource.")
+
+        # A more generic check applying to all requests where this middleware is active
+        # Make sure to adjust `user_role` retrieval based on your actual user model/auth system.
+        if user_role not in allowed_roles:
+            # You can customize the forbidden message
+            return HttpResponseForbidden("You do not have the necessary permissions to perform this action.")
+
+        # If the user has an allowed role, or if the middleware doesn't block them,
+        # proceed to the next middleware or the view.
         response = self.get_response(request)
         return response
 
