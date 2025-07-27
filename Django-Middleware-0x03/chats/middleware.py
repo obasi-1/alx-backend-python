@@ -1,70 +1,97 @@
-# Django-Middleware-0x03/chats/middleware.py
+import logging
+from datetime import datetime, time, timedelta
+from django.http import HttpResponseForbidden, HttpResponseTooManyRequests
 
-from django.http import HttpResponseForbidden
+# Configure the logger
+logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler('requests.log')
+formatter = logging.Formatter('%(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
 
-class RolePermissionMiddleware:
-    """
-    Middleware to check user roles (admin or moderator) for specific actions.
-    If the user does not have the required role, it returns a 403 Forbidden response.
-    """
+class RequestLoggingMiddleware:
     def __init__(self, get_response):
-        """
-        Initializes the middleware.
-        get_response: The next middleware or the view function.
-        """
         self.get_response = get_response
 
     def __call__(self, request):
-        """
-        Processes the incoming request.
-        Checks if the user's role is 'admin' or 'moderator'.
-        If not, it returns an HttpResponseForbidden.
-        """
-        # IMPORTANT: This is a placeholder for how you might determine a user's role.
-        # In a real application, you would typically get the role from:
-        # - request.user.is_staff or request.user.is_superuser (for Django's built-in User model)
-        # - A custom 'role' field on your User model or a related profile model
-        # - A session variable or JWT token if using custom authentication.
-
-        # For demonstration purposes, let's assume the role is stored in a session
-        # or can be derived from the user object.
-        # Replace this logic with how your application actually stores user roles.
-
-        # Example: Assuming you have a custom 'role' attribute on the user object
-        # or you've set it in the session during login.
-        user_role = getattr(request.user, 'role', 'guest') # Default to 'guest' if no role found
-
-        # Example: If you're using Django's built-in User model and want to check staff/superuser status
-        # if request.user.is_authenticated:
-        #     if request.user.is_superuser or request.user.is_staff:
-        #         user_role = 'admin' # Or 'moderator' based on your specific logic
-        #     else:
-        #         user_role = 'user'
-        # else:
-        #     user_role = 'anonymous'
-
-
-        # Define the roles that are allowed to proceed
-        allowed_roles = ['admin', 'moderator']
-
-        # Check if the user is authenticated and has an allowed role
-        # You might want to add more specific URL path checks here
-        # For example, only apply this middleware to '/admin/' paths or specific API endpoints.
-        # if not request.user.is_authenticated or user_role not in allowed_roles:
-        #     # This simple check applies to ALL requests. You might want to refine this.
-        #     # For instance, only apply to specific URLs or views.
-        #     if request.path.startswith('/chats/'): # Example: Only protect /chats/ URLs
-        #         if user_role not in allowed_roles:
-        #             return HttpResponseForbidden("You do not have permission to access this resource.")
-
-        # A more generic check applying to all requests where this middleware is active
-        # Make sure to adjust `user_role` retrieval based on your actual user model/auth system.
-        if user_role not in allowed_roles:
-            # You can customize the forbidden message
-            return HttpResponseForbidden("You do not have the necessary permissions to perform this action.")
-
-        # If the user has an allowed role, or if the middleware doesn't block them,
-        # proceed to the next middleware or the view.
+        user = request.user if request.user.is_authenticated else 'Anonymous'
+        log_message = f"{datetime.now()} - User: {user} - Path: {request.path}"
+        logger.info(log_message)
         response = self.get_response(request)
         return response
+    
 
+class RestrictAccessByTimeMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        current_time = datetime.now().time()
+        start_time = time(18, 0)  # 6 PM
+        end_time = time(21, 0)    # 9 PM
+
+        # Only apply restriction to /chats/ paths
+        if request.path.startswith('/chats/'):
+            if not (start_time <= current_time <= end_time):
+                return HttpResponseForbidden("Access to chat is only allowed between 6 PM and 9 PM.")
+
+        return self.get_response(request)
+    
+
+class OffensiveLanguageMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.ip_tracker = {}
+
+    def __call__(self, request):
+        if request.path.startswith('/chats/') and request.method == 'POST':
+            ip = self.get_client_ip(request)
+            now = datetime.now()
+
+            # Clean up old requests (older than 1 min)
+            if ip not in self.ip_tracker:
+                self.ip_tracker[ip] = []
+            self.ip_tracker[ip] = [
+                timestamp for timestamp in self.ip_tracker[ip]
+                if now - timestamp < timedelta(minutes=1)
+            ]
+
+            if len(self.ip_tracker[ip]) >= 5:
+                return HttpResponseTooManyRequests("Rate limit exceeded. Max 5 messages per minute.")
+
+            self.ip_tracker[ip].append(now)
+
+        return self.get_response(request)
+
+    def get_client_ip(self, request):
+        """ Get client IP address from request headers """
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+
+class RolepermissionMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Define paths that require elevated permissions
+        protected_paths = [
+            '/chats/admin-actions/',  # Example protected path
+        ]
+
+        if any(request.path.startswith(path) for path in protected_paths):
+            user = request.user
+            if not user.is_authenticated:
+                return HttpResponseForbidden("Authentication required.")
+
+            # Check if the user has an allowed role
+            if getattr(user, 'role', None) not in ['admin', 'moderator']:
+                return HttpResponseForbidden("You do not have permission to perform this action.")
+
+        return self.get_response(request)
