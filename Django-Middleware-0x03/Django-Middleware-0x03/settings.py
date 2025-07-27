@@ -14,7 +14,10 @@ from pathlib import Path
 import os # Import os for path manipulation
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Assuming this settings.py is directly in Django-Middleware-0x03/
+# If your project structure is standard, this would be:
+# BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 
 
 # Quick-start development settings - unsuitable for production
@@ -62,7 +65,7 @@ MIDDLEWARE = [
     'chats.middleware.RequestLoggingMiddleware',
 ]
 
-ROOT_URLCONF = 'Django-Middleware-0x03.urls'
+ROOT_URLCONF = 'Django-Middleware-0x03.urls' # This will need to be adjusted if settings.py is at top-level
 
 TEMPLATES = [
     {
@@ -80,7 +83,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'Django-Middleware-0x03.wsgi.application'
+WSGI_APPLICATION = 'Django-Middleware-0x03.wsgi.application' # This will need to be adjusted if settings.py is at top-level
 
 
 # Database
