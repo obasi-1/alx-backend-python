@@ -1,41 +1,20 @@
-# messaging_app/settings.py
-
-# ... (other Django settings) ...
+# settings.py
+# Add 'django_filters' to your INSTALLED_APPS
+# Make sure 'rest_framework' is also installed if you are using DRF
+# pip install djangorestframework django-filter
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'django_filters', # Added django_filters to your installed apps
-    'chats',
     # ... other apps
+    'rest_framework',
+    'django_filters',
+    'your_app_name', # Replace with the actual name of your Django app
 ]
 
-# ... (other middleware, templates, databases, etc.) ...
-
-# Django REST Framework settings
+# Optional: Configure REST Framework pagination style globally
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
-    ],
-    # Default pagination settings (can be overridden per ViewSet)
-    'DEFAULT_PAGINATION_CLASS': 'chats.pagination.MessagePagination', # Set your custom pagination class as default
-    'PAGE_SIZE': 20, # This sets the default page size if DEFAULT_PAGINATION_CLASS is used
-    
-    # Default filter backends
-    'DEFAULT_FILTER_BACKENDS': [
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20, # Default page size for all paginated views
+    'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
-    ],
+    ),
 }
-
-# ... (rest of your settings.py) ...
-
