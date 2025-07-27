@@ -1,67 +1,89 @@
-from rest_framework import viewsets
-from .models import Conversation, Message # Assuming these models exist in chats/models.py
-from .serializers import ConversationSerializer, MessageSerializer # Assuming these serializers exist
-from .permissions import IsParticipantOfConversation
+# messaging_app/chats/views.py
+
+from rest_framework import viewsets, status
+from rest_framework.permissions import IsAuthenticated # IsAuthenticated is imported here
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+
+from .models import Message, Conversation
+from .serializers import MessageSerializer, ConversationSerializer
+from .permissions import IsParticipantOfConversation # Import your custom permission
 
 class ConversationViewSet(viewsets.ModelViewSet):
     """
-    API endpoint that allows conversations to be viewed or edited.
-    Access is restricted to participants of the conversation.
+    ViewSet for managing Conversation objects.
+    Ensures only authenticated users who are participants can access conversations.
     """
+    queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
-    permission_classes = [IsParticipantOfConversation] # Apply custom permission here
+    # IsAuthenticated is applied here as part of the permission_classes
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation] 
 
     def get_queryset(self):
         """
-        This view should return a list of all conversations
-        for the currently authenticated user.
+        Restricts the returned conversations to only those the
+        current user is a participant of.
         """
-        user = self.request.user
-        # The queryset is filtered to only include conversations where the user is a participant.
-        return Conversation.objects.filter(participants=user)
+        # Filter conversations to only include those where the requesting user is a participant
+        if self.request.user.is_authenticated:
+            return self.queryset.filter(participants=self.request.user).distinct()
+        return self.queryset.none() # Return an empty queryset if user is not authenticated
 
     def perform_create(self, serializer):
         """
-        When creating a new conversation, automatically add the creator
-        to the list of participants.
+        When creating a new conversation, automatically add the creator as a participant.
         """
+        # Save the conversation instance
         conversation = serializer.save()
+        # Add the current authenticated user as a participant
         conversation.participants.add(self.request.user)
-
+        # Ensure the conversation creator is also a participant
+        # This assumes the 'participants' field is a ManyToManyField to User
+        # and it's not set in the serializer's create method, allowing us to add it here.
 
 class MessageViewSet(viewsets.ModelViewSet):
     """
-    API endpoint that allows messages to be viewed or created within a conversation.
-    This view assumes it is used with nested routing, like '/conversations/<conversation_pk>/messages/'.
+    ViewSet for managing Message objects.
+    Ensures only authenticated users who are participants of the message's conversation
+    can send, view, update, and delete messages.
     """
+    queryset = Message.objects.all()
     serializer_class = MessageSerializer
-    permission_classes = [IsParticipantOfConversation] # The same permission protects messages
+    # IsAuthenticated is applied here as part of the permission_classes
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
 
     def get_queryset(self):
         """
-        This view returns messages only from the specific conversation
-        defined in the URL, and only if the user is a participant.
+        Restricts the returned messages to only those within conversations
+        the current user is a participant of.
         """
-        # Get the conversation_pk from the URL
-        conversation_pk = self.kwargs.get('conversation_pk')
-        if conversation_pk:
-            # The permission class will already have run and verified the user can access
-            # the parent conversation. We just need to filter the messages.
-            return Message.objects.filter(conversation_id=conversation_pk)
-        # If no conversation is specified in the URL, return no messages.
-        return Message.objects.none()
+        if self.request.user.is_authenticated:
+            # Get all conversations the current user is a participant of
+            user_conversations = Conversation.objects.filter(participants=self.request.user)
+            # Filter messages that belong to these conversations
+            return self.queryset.filter(conversation__in=user_conversations)
+        return self.queryset.none() # Return an empty queryset if user is not authenticated
 
     def perform_create(self, serializer):
         """
-        When creating a message, automatically set the sender to the current user
-        and associate it with the conversation from the URL.
+        When creating a message, ensure the user is a participant of the target conversation.
         """
-        conversation_pk = self.kwargs.get('conversation_pk')
+        conversation_id = self.request.data.get('conversation')
+        if not conversation_id:
+            return Response({"detail": "Conversation ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            conversation = Conversation.objects.get(pk=conversation_pk)
-            # The IsParticipantOfConversation permission has already verified the user
-            # is part of this conversation, so we can safely save the message.
-            serializer.save(sender=self.request.user, conversation=conversation)
-        except Conversation.DoesNotExist:
-            # This case should ideally not be reached if routing is correct and permissions are checked.
-            pass
+            conversation = get_object_or_404(Conversation, pk=conversation_id)
+        except Exception:
+            return Response({"detail": "Conversation not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the requesting user is a participant of the conversation
+        if self.request.user not in conversation.participants.all():
+            return Response(
+                {"detail": "You are not a participant of this conversation."},
+                status=status.HTTP_403_FORBIDDEN # HTTP_403_FORBIDDEN is used here
+            )
+        
+        # Save the message, linking it to the conversation and the sender
+        serializer.save(sender=self.request.user, conversation=conversation)
+
