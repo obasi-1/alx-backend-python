@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework', # Django REST Framework
     'messaging_app', # Your messaging application
+    'chats', # Ensure 'chats' app is installed if it contains the middleware
 ]
 
 MIDDLEWARE = [
@@ -50,9 +51,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # Add your custom middleware here.
-    # The order matters: place it after AuthenticationMiddleware if you need access to request.user.
-    'chats.middleware.RequestLoggingMiddleware', # Updated to 'chats.middleware.RequestLoggingMiddleware'
+    # Add your custom middlewares here.
+    # Place RestrictAccessByTimeMiddleware before RequestLoggingMiddleware if you want to deny access
+    # before logging the request.
+    'chats.middleware.RestrictAccessByTimeMiddleware', # New middleware for time restriction
+    'chats.middleware.RequestLoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'Django-Middleware-0x03.urls'
@@ -111,7 +114,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'UTC' # Ensure your server's timezone is correctly configured or adjust this.
 
 USE_I18N = True
 
