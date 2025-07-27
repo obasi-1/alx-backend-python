@@ -1,0 +1,285 @@
+{
+	"info": {
+		"_postman_id": "c7e8b9d0-1e2f-4a3b-8c4d-5f6e7a8b9c0d",
+		"name": "Django Messages API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_collection_id": "YOUR_COLLECTION_ID"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Get JWT Token (Login)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"testpassword\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/token/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"token",
+								""
+							]
+						},
+						"description": "Obtain access and refresh tokens. Update the 'access_token' environment variable with the received access token."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Messages",
+			"item": [
+				{
+					"name": "Send Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"receiver\": 2,  // Replace with the ID of the receiver user\n    \"content\": \"Hello from Postman! This is a new message.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/messages/send/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"messages",
+								"send",
+								""
+							]
+						},
+						"description": "Send a new message. Requires authentication (access_token in Authorization header)."
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch All Messages (Paginated)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/messages/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"messages",
+								""
+							]
+						},
+						"description": "Fetch all messages with default pagination (20 per page). Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch Messages - Page 2, Size 10",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/messages/?page=2&page_size=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"messages",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "2"
+								},
+								{
+									"key": "page_size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Fetch messages from the second page, with 10 messages per page. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch Messages - Filter by Sender",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/messages/?sender=testuser",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"messages",
+								""
+							],
+							"query": [
+								{
+									"key": "sender",
+									"value": "testuser"
+								}
+							]
+						},
+						"description": "Fetch messages sent by a specific username. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch Messages - Filter by Receiver ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/messages/?receiver_id=2",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"messages",
+								""
+							],
+							"query": [
+								{
+									"key": "receiver_id",
+									"value": "2"
+								}
+							]
+						},
+						"description": "Fetch messages received by a specific user ID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch Messages - Filter by Date Range",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/messages/?timestamp_after=2023-01-01T00:00:00&timestamp_before=2024-12-31T23:59:59",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"messages",
+								""
+							],
+							"query": [
+								{
+									"key": "timestamp_after",
+									"value": "2023-01-01T00:00:00"
+								},
+								{
+									"key": "timestamp_before",
+									"value": "2024-12-31T23:59:59"
+								}
+							]
+						},
+						"description": "Fetch messages within a specific date and time range. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// For 'Get JWT Token (Login)' request, automatically set access_token environment variable",
+					"if (pm.request.url.includes('/api/token/')) {",
+					"    const responseJson = pm.response.json();",
+					"    if (responseJson.access) {",
+					"        pm.environment.set(\"access_token\", responseJson.access);",
+					"        console.log(\"Access Token set:\", responseJson.access);",
+					"    }",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000",
+			"type": "string",
+			"description": "The base URL of your Django API (e.g., http://127.0.0.1:8000)"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string",
+			"description": "JWT Access Token. This will be automatically set after a successful login."
+		}
+	]
+}
