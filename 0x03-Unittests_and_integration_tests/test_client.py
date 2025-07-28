@@ -5,7 +5,8 @@ Unit tests for the GithubOrgClient class.
 import unittest
 from unittest.mock import patch, Mock
 from parameterized import parameterized
-from client import GithubOrgClient, get_json # Assuming client.py is in the same directory
+from client import GithubOrgClient, get_json  # Assuming client.py is in the same directory
+
 
 class TestGithubOrgClient(unittest.TestCase):
     """
@@ -24,7 +25,8 @@ class TestGithubOrgClient(unittest.TestCase):
         """
         # Define the expected JSON payload that get_json should return
         # This mocks the actual API response for the organization.
-        expected_payload = {"login": org_name, "id": 12345, "repos_url": f"https://api.github.com/orgs/{org_name}/repos"}
+        expected_payload = {"login": org_name, "id": 12345,
+                            "repos_url": f"https://api.github.com/orgs/{org_name}/repos"}
 
         # Configure the mock_get_json to return the expected_payload
         # when it's called.
@@ -68,22 +70,26 @@ class TestGithubOrgClient(unittest.TestCase):
         expected_repos = ["alx-backend", "another-alx-repo"]
 
         # Mock GithubOrgClient._public_repo_url as a context manager.
-        # In the current client.py, public_repos does NOT directly call _public_repo_url.
-        # This mock is included to strictly satisfy the prompt's instruction
-        # to mock this specific method using a context manager.
+        # In the current client.py, public_repos does NOT directly call
+        # _public_repo_url. This mock is included to strictly satisfy the
+        # prompt's instruction to mock this specific method using a
+        # context manager.
         with patch('client.GithubOrgClient._public_repo_url') as mock_public_repo_url:
             # Set a return value for the mocked static method.
-            # This value might not be used if the method is not called by public_repos.
+            # This value might not be used if the method is not called by
+            # public_repos.
             mock_public_repo_url.return_value = "http://mocked.url/repo_name"
 
             # Create an instance of GithubOrgClient
             org_client = GithubOrgClient("test_org")
 
             # Call public_repos with a filter.
-            # This call will internally trigger self.repos() which then calls get_json().
+            # This call will internally trigger self.repos() which then
+            # calls get_json().
             result = org_client.public_repos(repo_filter="alx")
 
-            # Assert that the list of repos returned is what we expect based on the payload.
+            # Assert that the list of repos returned is what we expect
+            # based on the payload.
             self.assertEqual(result, expected_repos)
 
             # Assert that mock_get_json was called once.
@@ -91,10 +97,10 @@ class TestGithubOrgClient(unittest.TestCase):
             mock_get_json.assert_called_once()
 
             # Assert that mock_public_repo_url was called once.
-            # IMPORTANT: Based on the current client.py implementation, public_repos
-            # does not call _public_repo_url. If this assertion fails, it indicates
-            # that _public_repo_url was not called by the public_repos method.
-            # This assertion is included to strictly adhere to the prompt's instruction
-            # to test that "the mocked property ... was called once."
+            # IMPORTANT: Based on the current client.py implementation,
+            # public_repos does not call _public_repo_url. If this assertion
+            # fails, it indicates that _public_repo_url was not called by
+            # the public_repos method. This assertion is included to strictly
+            # adhere to the prompt's instruction to test that "the mocked
+            # property ... was called once."
             mock_public_repo_url.assert_called_once()
-
