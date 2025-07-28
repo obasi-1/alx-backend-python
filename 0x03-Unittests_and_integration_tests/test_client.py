@@ -1,28 +1,50 @@
 #!/usr/bin/env python3
 """
-GithubOrgClient module
+Unit tests for the GithubOrgClient class.
 """
-import requests
+import unittest
+from unittest.mock import patch, Mock
+from parameterized import parameterized
+from client import GithubOrgClient, get_json # Assuming client.py is in the same directory
 
-def get_json(url: str) -> dict:
+class TestGithubOrgClient(unittest.TestCase):
     """
-    Fetches JSON from a given URL.
+    Tests for the GithubOrgClient class.
     """
-    response = requests.get(url)
-    response.raise_for_status()
-    return response.json()
 
-class GithubOrgClient:
-    """
-    Client for Github Organization API.
-    """
-    def __init__(self, org_name: str):
-        self._org_name = org_name
-
-    def org(self) -> dict:
+    @parameterized.expand([
+        ("google",),
+        ("abc",),
+    ])
+    @patch('client.get_json')
+    def test_org(self, org_name, mock_get_json):
         """
-        Returns the organization's payload.
+        Test that GithubOrgClient.org returns the correct value
+        and get_json is called once with the expected argument.
         """
-        return get_json(f"https://api.github.com/orgs/{self._org_name}")
+        # Define the expected JSON payload that get_json should return
+        # This mocks the actual API response for the organization.
+        expected_payload = {"login": org_name, "id": 12345, "repos_url": f"https://api.github.com/orgs/{org_name}/repos"}
 
-    # You might have other methods here, but for this test, 'org' is sufficient.
+        # Configure the mock_get_json to return the expected_payload
+        # when it's called.
+        mock_get_json.return_value = expected_payload
+
+        # Create an instance of GithubOrgClient with the current org_name
+        org_client = GithubOrgClient(org_name)
+
+        # Call the .org() method, which internally calls get_json
+        result = org_client.org()
+
+        # Construct the expected URL that get_json should have been called with
+        expected_url = f"https://api.github.com/orgs/{org_name}"
+
+        # Assert that mock_get_json was called exactly once with the expected URL
+        mock_get_json.assert_called_once_with(expected_url)
+
+        # Assert that the result returned by org_client.org() matches
+        # our expected_payload
+        self.assertEqual(result, expected_payload)
+
+if __name__ == '__main__':
+    unittest.main()
