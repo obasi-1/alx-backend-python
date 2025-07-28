@@ -26,7 +26,8 @@ class TestGithubOrgClient(unittest.TestCase):
         # Define the expected JSON payload that get_json should return
         # This mocks the actual API response for the organization.
         expected_payload = {"login": org_name, "id": 12345,
-                            "repos_url": f"https://api.github.com/orgs/{org_name}/repos"}
+                            "repos_url": (f"https://api.github.com/orgs/"
+                                          f"{org_name}/repos")}
 
         # Configure the mock_get_json to return the expected_payload
         # when it's called.
@@ -74,7 +75,8 @@ class TestGithubOrgClient(unittest.TestCase):
         # _public_repo_url. This mock is included to strictly satisfy the
         # prompt's instruction to mock this specific method using a
         # context manager.
-        with patch('client.GithubOrgClient._public_repo_url') as mock_public_repo_url:
+        with patch('client.GithubOrgClient._public_repo_url') as \
+                mock_public_repo_url:
             # Set a return value for the mocked static method.
             # This value might not be used if the method is not called by
             # public_repos.
