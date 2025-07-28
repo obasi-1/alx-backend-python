@@ -1,68 +1,51 @@
-# Create the client.py file with the provided content
-%%writefile client.py
 #!/usr/bin/env python3
 """
-A module for the GithubOrgClient class.
+Unit tests for the GithubOrgClient class.
 """
-import requests
-from functools import wraps
+import unittest
+from unittest.mock import patch, Mock
+from parameterized import parameterized
+from client import GithubOrgClient, get_json # Assuming client.py is in the same directory
 
-def get_json(url: str) -> dict:
+class TestGithubOrgClient(unittest.TestCase):
     """
-    Fetches JSON data from a given URL.
+    Tests for the GithubOrgClient class.
     """
-    response = requests.get(url)
-    response.raise_for_status()  # Raise an exception for bad status codes
-    return response.json()
 
-class GithubOrgClient:
-    """
-    Client for interacting with the GitHub API for organizations.
-    """
-    def __init__(self, org_name: str):
-        self._org_name = org_name
+    @parameterized.expand([
+        ("google",),
+        ("abc",),
+    ])
+    @patch('client.get_json')
+    def test_org(self, org_name, mock_get_json):
+        """
+        Test that GithubOrgClient.org returns the correct value
+        and get_json is called once with the expected argument.
+        """
+        # Define the expected JSON payload that get_json should return
+        # This mocks the actual API response for the organization.
+        expected_payload = {"login": org_name, "id": 12345, "repos_url": f"https://api.github.com/orgs/{org_name}/repos"}
 
-    def org(self) -> dict:
-        """
-        Returns the organization's information.
-        """
-        url = f"https://api.github.com/orgs/{self._org_name}"
-        return get_json(url)
+        # Configure the mock_get_json to return the expected_payload
+        # when it's called.
+        mock_get_json.return_value = expected_payload
 
-    def repos_url(self) -> str:
-        """
-        Returns the URL for the organization's repositories.
-        """
-        return self.org()["repos_url"]
+        # Create an instance of GithubOrgClient with the current org_name
+        org_client = GithubOrgClient(org_name)
 
-    def repos(self) -> list:
-        """
-        Returns a list of repositories for the organization.
-        """
-        url = self.repos_url()
-        return get_json(url)
+        # Call the .org() method, which internally calls get_json
+        result = org_client.org()
 
-    def public_repos(self, repo_filter: str = None) -> list:
-        """
-        Returns a list of public repositories, optionally filtered.
-        """
-        repos = self.repos()
-        if repo_filter:
-            return [repo["name"] for repo in repos if repo_filter in repo["name"]]
-        return [repo["name"] for repo in repos]
+        # Construct the expected URL that get_json should have been called with
+        expected_url = f"https://api.github.com/orgs/{org_name}"
 
-    @staticmethod
-    def _public_repo_url(name: str) -> str:
-        """
-        Returns the URL for a public repository.
-        """
-        return f"https://github.com/{name}"
+        # Assert that mock_get_json was called exactly once with the expected URL
+        mock_get_json.assert_called_once_with(expected_url)
 
-    @staticmethod
-    def has_license(repo: dict, license_key: str) -> bool:
-        """
-        Checks if a repository has a specific license.
-        """
-        if "license" in repo and repo["license"] is not None:
-            return repo["license"]["key"] == license_key
-        return False
+        # Assert that the result returned by org_client.org() matches
+        # our expected_payload
+        self.assertEqual(result, expected_payload)
+
+if __name__ == '__main__':
+    unittest.main()
+
