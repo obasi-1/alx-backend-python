@@ -61,17 +61,10 @@ def send_message(request):
 @login_required
 def message_list(request):
     """
-    Displays a list of messages for the authenticated user,
-    with optimized queries to prevent the N+1 problem.
+    Displays a list of unread messages for the authenticated user,
+    using a custom manager for optimized queries.
     """
-    # Fetch all messages where the current user is either the sender or the receiver.
-    # Use select_related to pre-fetch the sender and receiver users,
-    # and prefetch_related to pre-fetch replies to each message.
-    # We filter to only show top-level messages (those without a parent).
-    messages = Message.objects.filter(
-        Q(sender=request.user) | Q(receiver=request.user),
-        parent_message__isnull=True
-    ).select_related('sender', 'receiver').prefetch_related('replies').order_by('-timestamp')
+    messages = Message.unread_messages.for_user(request.user).order_by('-timestamp')
     
     context = {
         'messages': messages,
