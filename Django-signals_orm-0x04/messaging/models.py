@@ -11,9 +11,25 @@ class Message(models.Model):
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    edited = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username}"
+
+class MessageHistory(models.Model):
+    """
+    Represents a log of previous versions of a message.
+    """
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='history')
+    old_content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = 'Message histories'
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"History for message {self.message.id} at {self.timestamp}"
 
 class Notification(models.Model):
     """
