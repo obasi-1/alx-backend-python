@@ -64,7 +64,7 @@ def message_list(request):
     Displays a list of unread messages for the authenticated user,
     using a custom manager for optimized queries.
     """
-    messages = Message.unread_messages.for_user(request.user).order_by('-timestamp')
+    messages = Message.unread.unread_for_user(request.user).order_by('-timestamp')
     
     context = {
         'messages': messages,
