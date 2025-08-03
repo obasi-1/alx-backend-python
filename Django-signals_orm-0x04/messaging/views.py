@@ -5,6 +5,7 @@ from django.contrib.auth import logout
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.views.decorators.cache import cache_page
 from .models import Message
 from django.http import HttpResponse
 
@@ -59,6 +60,7 @@ def send_message(request):
     return render(request, 'messaging/send_message.html', {'users': User.objects.exclude(pk=request.user.pk)})
 
 @login_required
+@cache_page(60) # Cache the view for 60 seconds
 def message_list(request):
     """
     Displays a list of unread messages for the authenticated user.
