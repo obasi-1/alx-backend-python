@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib import messages
 from django.contrib.auth.models import User
+from django.db.models import Q
 from .models import Message
 from django.http import HttpResponse
 
@@ -56,3 +57,23 @@ def send_message(request):
             return redirect('send_message')
     
     return render(request, 'messaging/send_message.html', {'users': User.objects.exclude(pk=request.user.pk)})
+
+@login_required
+def message_list(request):
+    """
+    Displays a list of messages for the authenticated user,
+    with optimized queries to prevent the N+1 problem.
+    """
+    # Fetch all messages where the current user is either the sender or the receiver.
+    # Use select_related to pre-fetch the sender and receiver users,
+    # and prefetch_related to pre-fetch replies to each message.
+    # We filter to only show top-level messages (those without a parent).
+    messages = Message.objects.filter(
+        Q(sender=request.user) | Q(receiver=request.user),
+        parent_message__isnull=True
+    ).select_related('sender', 'receiver').prefetch_related('replies').order_by('-timestamp')
+    
+    context = {
+        'messages': messages,
+    }
+    return render(request, 'messaging/message_list.html', context)
