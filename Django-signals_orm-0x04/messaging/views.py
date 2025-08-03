@@ -61,10 +61,22 @@ def send_message(request):
 @login_required
 def message_list(request):
     """
-    Displays a list of unread messages for the authenticated user,
-    using a custom manager for optimized queries.
+    Displays a list of unread messages for the authenticated user.
+    The code shows two ways to achieve the same result: using a custom manager
+    or using direct ORM calls.
     """
+    # Option 1: Use the custom manager for a clean and reusable query.
     messages = Message.unread.unread_for_user(request.user).order_by('-timestamp')
+
+    # Option 2: Direct ORM calls (This is commented out as the custom manager is preferred)
+    # messages = Message.objects.filter(
+    #     receiver=request.user,
+    #     is_read=False
+    # ).select_related('sender').only(
+    #     'sender__username',
+    #     'content',
+    #     'timestamp'
+    # ).order_by('-timestamp')
     
     context = {
         'messages': messages,
