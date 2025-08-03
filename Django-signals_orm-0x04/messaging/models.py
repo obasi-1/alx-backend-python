@@ -6,6 +6,7 @@ from django.utils import timezone
 class Message(models.Model):
     """
     Represents a message sent from one user to another.
+    Includes a self-referential foreign key for threaded conversations.
     """
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
@@ -14,6 +15,7 @@ class Message(models.Model):
     edited = models.BooleanField(default=False)
     edited_at = models.DateTimeField(null=True, blank=True)
     edited_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='edited_messages')
+    parent_message = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='replies')
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username}"
