@@ -1,0 +1,16 @@
+This file contains the commands to set up and apply the Ingress configuration.
+
+1. Install the Nginx Ingress controller addon in Minikube.
+
+This command enables the controller, which watches for Ingress resources
+
+and configures the Nginx proxy accordingly.
+minikube addons enable ingress
+
+2. Apply the Ingress resource configuration from the YAML file.
+
+This command tells the Kubernetes API to create the Ingress resource defined
+
+in ingress.yaml. The Ingress controller will then detect this new resource
+and set up the routing rule.
+kubectl apply -f ingress.yaml
