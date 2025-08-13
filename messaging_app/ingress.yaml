@@ -1,0 +1,32 @@
+# This YAML file defines the Kubernetes Ingress resource to expose the Django app.
+# It routes external HTTP traffic from a specific path to the internal service.
+#
+# Before applying this, ensure an Ingress controller (like Nginx) is running in your cluster.
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: messaging-app-ingress
+  annotations:
+    # This annotation is specific to the Nginx Ingress controller.
+    # It rewrites the URL path before forwarding the request to the backend service.
+    # For example, a request to /api/some/path becomes /some/path.
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+  # You can replace 'messaging-app.local' with your actual domain if you have one.
+  # For local testing, you would typically edit your /etc/hosts file to point this
+  # domain to your Minikube IP.
+  - host: messaging-app.local
+    http:
+      paths:
+      - path: /api(/|$)(.*)
+        # PathType 'Prefix' matches based on a URL path prefix.
+        pathType: Prefix
+        backend:
+          service:
+            # This must match the name of the Service you created earlier.
+            name: messaging-app-service
+            port:
+              # This must match the port exposed by your Service.
+              number: 80
