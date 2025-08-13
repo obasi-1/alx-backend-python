@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# This script automates scaling a Kubernetes deployment, performing a load test,
+# and monitoring resource usage.
+#
+# It performs the following steps:
+# 1. Checks if 'wrk' (a load testing tool) is installed.
+# 2. Scales the 'messaging-app-deployment' to 3 replicas.
+# 3. Verifies that the new pods are running and ready.
+# 4. Forwards a local port to the 'messaging-app-service' to enable load testing.
+# 5. Runs a load test against the service using 'wrk'.
+# 6. Monitors CPU and memory usage of the app pods using 'kubectl top'.
+# 7. Cleans up the port-forwarding process on exit.
+
+# --- Configuration ---
+DEPLOYMENT_NAME="messaging-app-deployment"
+SERVICE_NAME="messaging-app-service"
+APP_LABEL="app=messaging-app"
+REPLICA_COUNT=3
+LOCAL_PORT=8080
+SERVICE_PORT=80
+
+# --- Step 1: Check for wrk Installation ---
+echo "INFO: Checking for wrk installation..."
+if ! command -v wrk &> /dev/null
+then
+    echo "ERROR: 'wrk' could not be found."
+    echo "Please install wrk to perform load testing."
+    echo "Installation instructions can be found at: https://github.com/wg/wrk"
+    exit 1
+else
+    echo "INFO: wrk is installed."
+fi
+
+# --- Step 2: Scale the Deployment ---
+echo "INFO: Scaling deployment '${DEPLOYMENT_NAME}' to ${REPLICA_COUNT} replicas..."
+kubectl scale deployment ${DEPLOYMENT_NAME} --replicas=${REPLICA_COUNT}
+if [ $? -ne 0 ]; then
+    echo "ERROR: Failed to scale the deployment. Please check the deployment name and your kubectl context."
+    exit 1
+fi
+echo "SUCCESS: Deployment scaling command issued."
+
+# --- Step 3: Verify Pods are Running ---
+echo "INFO: Verifying that ${REPLICA_COUNT} pods are running and ready..."
+echo "INFO: This may take a moment as new pods are created."
+kubectl wait --for=condition=ready pod -l ${APP_LABEL} --timeout=120s
+if [ $? -ne 0 ]; then
+    echo "ERROR: Timed out waiting for all pods to become ready."
+    kubectl get pods -l ${APP_LABEL}
+    exit 1
+fi
+echo "SUCCESS: All pods are running and ready."
+kubectl get pods -l ${APP_LABEL}
+
+# --- Step 4: Setup Port Forwarding for Load Test ---
+echo "INFO: Setting up port-forward from localhost:${LOCAL_PORT} to service/${SERVICE_NAME}:${SERVICE_PORT}..."
+kubectl port-forward service/${SERVICE_NAME} ${LOCAL_PORT}:${SERVICE_PORT} &
+PORT_FORWARD_PID=$!
+
+# Add a trap to ensure the port-forward process is killed when the script exits
+trap "echo 'INFO: Cleaning up port-forward process...'; kill $PORT_FORWARD_PID" EXIT
+
+# Give the port-forwarding a moment to establish
+sleep 3
+
+# --- Step 5: Perform Load Testing ---
+echo "INFO: Performing load test with wrk for 30 seconds..."
+echo "      (4 threads, 100 connections)"
+wrk -t4 -c100 -d30s http://localhost:${LOCAL_PORT}
+echo "INFO: Load test complete."
+
+# --- Step 6: Monitor Resource Usage ---
+echo "INFO: Displaying resource usage for the app pods..."
+# Note: The metrics-server must be enabled in your cluster for this command to work.
+# In Minikube, you can enable it with: minikube addons enable metrics-server
+kubectl top pods -l ${APP_LABEL}
+if [ $? -ne 0 ]; then
+    echo "WARN: 'kubectl top pods' failed. Is the metrics-server addon enabled in your cluster?"
+fi
+
+echo "--- Script Finished ---"
