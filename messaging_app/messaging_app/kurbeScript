@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# This script automates the setup and verification of a local Kubernetes cluster using Minikube.
+#
+# It performs the following steps:
+# 1. Checks if Minikube is installed on the system.
+# 2. Starts the Minikube cluster.
+# 3. Verifies that the cluster is running and accessible via kubectl.
+# 4. Retrieves and lists all available pods in the default namespace.
+
+# --- Step 1: Check for Minikube Installation ---
+echo "INFO: Checking for Minikube installation..."
+if ! command -v minikube &> /dev/null
+then
+    echo "ERROR: minikube could not be found."
+    echo "Please install Minikube before running this script."
+    echo "Installation guide: https://minikube.sigs.k8s.io/docs/start/"
+    exit 1
+else
+    echo "INFO: Minikube is installed."
+fi
+
+# --- Step 2: Start the Kubernetes Cluster ---
+echo "INFO: Starting the Minikube Kubernetes cluster..."
+# The 'minikube start' command creates and starts a local Kubernetes cluster.
+# If a cluster is already running, this command will use the existing one.
+minikube start
+if [ $? -ne 0 ]; then
+    echo "ERROR: Failed to start the Minikube cluster. Please check your Minikube setup."
+    exit 1
+fi
+echo "SUCCESS: Minikube cluster started."
+
+# --- Step 3: Verify Cluster Status ---
+echo "INFO: Verifying cluster status with 'kubectl cluster-info'..."
+# The 'kubectl cluster-info' command provides the address of the master and services.
+# A successful output confirms that kubectl can communicate with the cluster.
+kubectl cluster-info
+if [ $? -ne 0 ]; then
+    echo "ERROR: 'kubectl cluster-info' failed. The cluster might not be running correctly."
+    exit 1
+fi
+echo "SUCCESS: Cluster is running and accessible."
+
+# --- Step 4: Retrieve Available Pods ---
+echo "INFO: Retrieving available pods with 'kubectl get pods'..."
+# The 'kubectl get pods' command lists all the pods in the current namespace (default).
+# This helps to see the initial state of the cluster's workloads.
+kubectl get pods
+echo "INFO: Pod retrieval command executed."
+
+echo "--- Script Finished ---"
