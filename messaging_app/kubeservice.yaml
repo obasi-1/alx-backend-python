@@ -1,0 +1,20 @@
+# This YAML file defines the Service that routes traffic to either the Blue or Green deployment.
+# The key is the 'selector.version' field. By default, it points to 'blue'.
+# To switch traffic to the green version, you change 'version: blue' to 'version: green'
+# and re-apply this file with 'kubectl apply -f kubeservice.yaml'.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: messaging-app-service
+spec:
+  type: ClusterIP
+  selector:
+    # This selector determines which pods receive traffic.
+    # Initially, it points to the 'blue' version.
+    app: messaging-app
+    version: blue
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
