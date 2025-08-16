@@ -1,5 +1,6 @@
 # This YAML file defines the "Blue" deployment for the Django messaging app.
 # This represents the current, stable version running in production.
+# Version updated to trigger a rolling update.
 
 apiVersion: apps/v1
 kind: Deployment
@@ -10,6 +11,13 @@ metadata:
     version: blue
 spec:
   replicas: 2
+  # The rolling update strategy is the default, but it's good practice to define it.
+  # This ensures that during the update, at least 1 pod is available and no more than 3 are created.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: messaging-app
@@ -22,7 +30,7 @@ spec:
     spec:
       containers:
       - name: messaging-app-container
-        # IMPORTANT: Replace with the image for your current stable version (e.g., v1.0)
-        image: your-dockerhub-username/messaging-app:v1.0
+        # IMPORTANT: The image has been updated to the new version (v2.0).
+        image: your-dockerhub-username/messaging-app:v2.0
         ports:
         - containerPort: 8000
