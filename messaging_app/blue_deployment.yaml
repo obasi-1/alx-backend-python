@@ -1,0 +1,28 @@
+# This YAML file defines the "Blue" deployment for the Django messaging app.
+# This represents the current, stable version running in production.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: messaging-app-blue
+  labels:
+    app: messaging-app
+    version: blue
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: messaging-app
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: messaging-app
+        version: blue
+    spec:
+      containers:
+      - name: messaging-app-container
+        # IMPORTANT: Replace with the image for your current stable version (e.g., v1.0)
+        image: your-dockerhub-username/messaging-app:v1.0
+        ports:
+        - containerPort: 8000
