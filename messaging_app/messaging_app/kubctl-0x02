@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# This script automates the process of a Blue-Green deployment.
+#
+# 1. Deploys the 'blue' (current) version of the application.
+# 2. Deploys the 'green' (new) version of the application.
+# 3. Applies the service, initially routing all traffic to the 'blue' version.
+# 4. Waits for the 'green' deployment's pods to become ready.
+# 5. Fetches the logs from the 'green' pods to allow for a final check before switching traffic.
+
+echo "INFO: Starting Blue-Green deployment process..."
+
+# --- Step 1: Deploy the Blue version ---
+echo "INFO: Applying blue_deployment.yaml..."
+kubectl apply -f blue_deployment.yaml
+if [ $? -ne 0 ]; then
+    echo "ERROR: Failed to apply blue_deployment.yaml."
+    exit 1
+fi
+
+# --- Step 2: Deploy the Green version ---
+echo "INFO: Applying green_deployment.yaml..."
+kubectl apply -f green_deployment.yaml
+if [ $? -ne 0 ]; then
+    echo "ERROR: Failed to apply green_deployment.yaml."
+    exit 1
+fi
+
+# --- Step 3: Apply the Service to route to Blue ---
+echo "INFO: Applying kubeservice.yaml to route traffic to the Blue deployment..."
+kubectl apply -f kubeservice.yaml
+if [ $? -ne 0 ]; then
+    echo "ERROR: Failed to apply kubeservice.yaml."
+    exit 1
+fi
+
+# --- Step 4: Wait for Green Deployment to be Ready ---
+echo "INFO: Waiting for the Green deployment to become available..."
+kubectl wait --for=condition=available deployment/messaging-app-green --timeout=180s
+if [ $? -ne 0 ]; then
+    echo "ERROR: Timed out waiting for the Green deployment."
+    exit 1
+fi
+echo "SUCCESS: Green deployment is now available."
+kubectl get pods -l app=messaging-app
+
+# --- Step 5: Check Logs of the New Version ---
+echo "INFO: Fetching recent logs from the Green pods for verification..."
+kubectl logs -l app=messaging-app,version=green --tail=100
+
+echo "--- Verification Step ---"
+echo "INFO: The Green version is running but not yet receiving live traffic."
+echo "INFO: Check the logs above for any errors."
+echo "INFO: To switch live traffic to the Green version, manually edit 'kubeservice.yaml',"
+echo "      change the selector from 'version: blue' to 'version: green', and run:"
+echo "      kubectl apply -f kubeservice.yaml"
+echo "--- Script Finished ---"
