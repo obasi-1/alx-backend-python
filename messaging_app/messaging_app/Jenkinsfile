@@ -23,9 +23,9 @@ pipeline {
         // Stage 2: Install Python dependencies
         stage('Install Dependencies') {
             steps {
-                // Execute shell commands to install dependencies using pip
+                // Execute shell commands to install dependencies using pip3
                 // Assumes a requirements.txt file is in the messaging_app directory
-                sh 'pip install -r messaging_app/requirements.txt'
+                sh 'pip3 install -r messaging_app/requirements.txt'
             }
         }
 
@@ -51,4 +51,3 @@ pipeline {
         }
     }
 }
-
