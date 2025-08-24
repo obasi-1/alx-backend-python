@@ -1,0 +1,78 @@
+# Workflow name displayed in the GitHub Actions UI
+name: CI/CD Testing
+
+# Trigger the workflow on push and pull request events to any branch
+on: [push, pull_request]
+
+# Define the jobs to be executed in the workflow
+jobs:
+  test:
+    # Set the operating system environment for the job
+    runs-on: ubuntu-latest
+
+    # Define services required for the job. Here, we need a MySQL database.
+    services:
+      mysql:
+        # Use the official MySQL 8.0 image from Docker Hub
+        image: mysql:8.0
+        
+        # Set environment variables for the database configuration.
+        # These will be used by Django's settings to connect.
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }} # Use a GitHub secret for security
+          MYSQL_DATABASE: messaging_app_test
+          MYSQL_USER: testuser
+          MYSQL_PASSWORD: testpassword
+        
+        # Map the container port 3306 to a host port for our application to connect to.
+        ports:
+          - 3306:3306
+        
+        # Health check to ensure the service is ready before the job starts.
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    # Define the steps for the 'test' job
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' # Use Python 3.11, you can change this if needed
+
+      # Step 3: Install dependencies from the requirements file
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        
+      # Step 4: Run Django migrations
+      # This ensures the test database schema is up-to-date
+      - name: Run migrations
+        run: python manage.py migrate
+
+      # Step 5: Run the Django tests
+      - name: Run tests with coverage
+        run: |
+          pip install coverage  # Install coverage for a test report
+          coverage run manage.py test
+          coverage report -m # Print the coverage report summary
+        env:
+          # Set the Django settings module to the testing settings.
+          # You should have a separate settings file for your test environment.
+          DJANGO_SETTINGS_MODULE: messaging_app.settings.testing
+          
+          # Pass the MySQL service environment variables as part of the test run.
+          # This connects Django to the MySQL container.
+          MYSQL_DATABASE: messaging_app_test
+          MYSQL_USER: testuser
+          MYSQL_PASSWORD: testpassword
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: 3306
