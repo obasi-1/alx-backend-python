@@ -4,13 +4,22 @@ pipeline {
     // Run this pipeline on any available agent
     agent any
 
-    // 2. Define the stages of the pipeline
+    // 2. Define environment variables for reusability
+    environment {
+        // Define the Docker Hub credentials ID you configured in Jenkins
+        DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
+        // Define your Docker Hub username
+        DOCKERHUB_USERNAME = 'your-dockerhub-username'
+        // Define the name of the image to build and push
+        IMAGE_NAME = "${DOCKERHUB_USERNAME}/messaging-app"
+    }
+
+    // 3. Define the stages of the pipeline
     stages {
         // Stage 1: Checkout source code from GitHub
         stage('Checkout') {
             steps {
                 // Use the git step to clone the repository
-                // Make sure you have configured 'github-credentials' in Jenkins
                 git url: 'https://github.com/your-username/alx-backend-python.git',
                     credentialsId: 'github-credentials',
                     branch: 'main'
@@ -24,7 +33,6 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 // Execute shell commands to install dependencies using pip3
-                // Assumes a requirements.txt file is in the messaging_app directory
                 sh 'pip3 install -r messaging_app/requirements.txt'
             }
         }
@@ -32,22 +40,52 @@ pipeline {
         // Stage 3: Run tests with pytest
         stage('Test') {
             steps {
-                // Run pytest on the messaging_app directory
-                // The --junitxml flag generates a test report in JUnit XML format
-                // The `|| true` ensures the pipeline continues even if tests fail,
-                // allowing the report to be published.
+                // Run pytest and generate a report
                 sh 'pytest messaging_app/ --junitxml=messaging_app/test-reports.xml || true'
+            }
+        }
+
+        // Stage 4: Build Docker Image
+        stage('Build Image') {
+            steps {
+                // Change into the directory containing the Dockerfile
+                dir('messaging_app') {
+                    // Build the Docker image and tag it with the build number and 'latest'
+                    script {
+                        def dockerImage = docker.build("${env.IMAGE_NAME}:${env.BUILD_NUMBER}", ".")
+                        dockerImage.tag('latest')
+                    }
+                }
+            }
+        }
+
+        // Stage 5: Push Docker Image to Docker Hub
+        stage('Push Image') {
+            steps {
+                // Use Jenkins credentials for Docker Hub
+                withCredentials([usernamePassword(credentialsId: env.DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    // Log in to Docker Hub
+                    sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+                    
+                    // Push the image with the build number tag
+                    sh "docker push ${env.IMAGE_NAME}:${env.BUILD_NUMBER}"
+
+                    // Push the image with the latest tag
+                    sh "docker push ${env.IMAGE_NAME}:latest"
+                }
             }
         }
     }
 
-    // 3. Define post-build actions
-    // These actions run after all stages are completed
+    // 4. Define post-build actions
     post {
         // The 'always' block runs regardless of the pipeline's success or failure
         always {
             // Publish the JUnit test result report
             junit 'messaging_app/test-reports.xml'
+
+            // Clean up by logging out of Docker Hub
+            sh 'docker logout'
         }
     }
 }
