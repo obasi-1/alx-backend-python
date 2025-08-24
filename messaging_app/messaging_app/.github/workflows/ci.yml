@@ -53,12 +53,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
         
-      # Step 4: Run Django migrations
+      # Step 4: Run flake8 linting to check for code quality issues
+      - name: Run flake8 linting
+        run: |
+          pip install flake8 # Install flake8
+          flake8 . # Run flake8 on the entire repository. This will fail the build if errors are found.
+
+      # Step 5: Run Django migrations
       # This ensures the test database schema is up-to-date
       - name: Run migrations
         run: python manage.py migrate
 
-      # Step 5: Run the Django tests
+      # Step 6: Run the Django tests
       - name: Run tests with coverage
         run: |
           pip install coverage  # Install coverage for a test report
@@ -76,3 +82,11 @@ jobs:
           MYSQL_PASSWORD: testpassword
           MYSQL_HOST: 127.0.0.1
           MYSQL_PORT: 3306
+
+      # Step 7: Upload the code coverage report as a build artifact
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: ./.coverage
+          retention-days: 7 # Retain the artifact for 7 days
