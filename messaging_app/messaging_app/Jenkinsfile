@@ -1,1 +1,51 @@
+// Declarative pipeline syntax
+pipeline {
+    // 1. Specify the agent
+    // Run this pipeline on any available agent
+    agent any
+
+    // 2. Define the stages of the pipeline
+    stages {
+        // Stage 1: Checkout source code from GitHub
+        stage('Checkout') {
+            steps {
+                // Use the git step to clone the repository
+                // Make sure you have configured 'github-credentials' in Jenkins
+                git url: 'https://github.com/your-username/alx-backend-python.git',
+                    credentialsId: 'github-credentials',
+                    branch: 'main'
+            }
+        }
+
+        // Stage 2: Install Python dependencies
+        stage('Install Dependencies') {
+            steps {
+                // Execute shell commands to install dependencies using pip
+                // Assumes a requirements.txt file is in the messaging_app directory
+                sh 'pip install -r messaging_app/requirements.txt'
+            }
+        }
+
+        // Stage 3: Run tests with pytest
+        stage('Test') {
+            steps {
+                // Run pytest on the messaging_app directory
+                // The --junitxml flag generates a test report in JUnit XML format
+                // The `|| true` ensures the pipeline continues even if tests fail,
+                // allowing the report to be published.
+                sh 'pytest messaging_app/ --junitxml=messaging_app/test-reports.xml || true'
+            }
+        }
+    }
+
+    // 3. Define post-build actions
+    // These actions run after all stages are completed
+    post {
+        // The 'always' block runs regardless of the pipeline's success or failure
+        always {
+            // Publish the JUnit test result report
+            junit 'messaging_app/test-reports.xml'
+        }
+    }
+}
 
